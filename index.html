@@ -132,7 +132,7 @@ body{overflow:hidden!important} #canvas{top:29%!important} #touchpad{position:fi
         <div id="status" class="notice center">Downloading...</div>
 
         <a class="btn fullscreen" href="javascript:{}" onclick="document.getElementById('canvas').webkitRequestFullscreen()"><i class="fa fa-expand"></i></a>
-    <div id="touchpad"><div class="hint"><span>ГОПНИК • управление v4</span><span class="zoom-controls"><button id="zoomout" type="button">−</button><span id="zoomvalue">140%</span><button id="zoomin" type="button">+</button></span></div>
+    <div id="touchpad"><div class="hint"><span>ГОПНИК • управление v5</span><span class="zoom-controls"><button id="zoomout" type="button">−</button><span id="zoomvalue">140%</span><button id="zoomin" type="button">+</button></span></div>
 <div class="entry"><input id="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Имя или команда (например help)"><button id="send" type="button">ВВОД ↵</button></div>
 <div class="keys">
 <button data-k="49">1</button><button data-k="50">2</button><button data-k="51">3</button><button data-k="52">4</button><button data-k="53">5</button>
@@ -148,16 +148,20 @@ document.getElementById('zoomout').addEventListener('click',function(){setZoom(z
 setZoom(140);
 var codes={13:'Enter',27:'Escape',32:'Space',8:'Backspace',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown'};
 function emit(code,down){
- var key=codes[code]||String.fromCharCode(code);
- var actualCode=(code>=97&&code<=122)?code-32:code;
- var e=new KeyboardEvent(down?'keydown':'keyup',{key:key,code:code>=48&&code<=57?'Digit'+String.fromCharCode(code):(actualCode>=65&&actualCode<=90?'Key'+String.fromCharCode(actualCode):key),bubbles:true,cancelable:true});
- try{Object.defineProperty(e,'keyCode',{get:function(){return actualCode}});Object.defineProperty(e,'which',{get:function(){return actualCode}})}catch(ex){}
- document.dispatchEvent(e);
+ var key=codes[code]||(code>=65&&code<=90?String.fromCharCode(code).toLowerCase():String.fromCharCode(code));
+ var physicalCode=code>=48&&code<=57?'Digit'+String.fromCharCode(code):code>=65&&code<=90?'Key'+String.fromCharCode(code):({13:'Enter',27:'Escape',32:'Space',8:'Backspace',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown'}[code]||key);
+ var target=document.getElementById('canvas');
+ // Older Emscripten/DOSBox builds may listen on window, document, or canvas.
+ [window,document,target].forEach(function(el){
+  var e=new KeyboardEvent(down?'keydown':'keyup',{key:key,code:physicalCode,bubbles:true,cancelable:true});
+  try{Object.defineProperty(e,'keyCode',{get:function(){return code}});Object.defineProperty(e,'which',{get:function(){return code}})}catch(ex){}
+  el.dispatchEvent(e);
+ });
 }
 var queue=Promise.resolve();
 function stroke(code){queue=queue.then(function(){return new Promise(function(resolve){emit(code,true);setTimeout(function(){emit(code,false);setTimeout(resolve,35)},65)})})}
 function sendText(str){for(var c of str){var n=c.charCodeAt(0);if(n>=65&&n<=90)n+=32;if(n>=97&&n<=122||n>=48&&n<=57||n===32)stroke(n);else if(c==='-')stroke(189)}stroke(13)}
-document.querySelectorAll('#touchpad [data-k]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();stroke(Number(b.dataset.k))})});
+document.querySelectorAll('#touchpad [data-k]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();document.getElementById('canvas').focus();stroke(Number(b.dataset.k))})});
 var inp=document.getElementById('command');document.getElementById('send').addEventListener('click',function(){sendText(inp.value);inp.value='';inp.blur()});
 inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();document.getElementById('send').click()}});
 })();
