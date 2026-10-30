@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ru-ru">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ГОПНИК.EXE</title>
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
+
+    <!-- MS-DOS icon -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://js-dos.com/assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://js-dos.com/assets/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://js-dos.com/assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="https://js-dos.com/assets/ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="https://js-dos.com/assets/ico/favicon.png">
+
+    <style>
+
+    @font-face {
+        font-family: 'DOS';
+        src: url('dos_system_font.eot');
+        src: url('dos_system_font.eot?#iefix') format('embedded-opentype'),
+        url('dos_system_font.woff2') format('woff2'),
+        url('dos_system_font.woff') format('woff'),
+        url('dos_system_font.ttf') format('truetype'),
+        url('dos_system_font.svg#dos_system_fontregular') format('svg');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    @keyframes appear {
+        0%    { transform: scale(0.9); opacity: 0; }
+        100%  { transform: scale(1); opacity: 1; } }
+
+    @-webkit-keyframes appear {
+        0%    { -webkit-transform: scale(0.9); opacity: 0; }
+        100%  { -webkit-transform: scale(1); opacity: 1; } }
+
+    @keyframes notice {
+        0%    { transform: scale(0.9); opacity: 0; }
+        50%   { transform: scale(1);   opacity: 1; }
+        100%  { transform: scale(1.1); opacity: 0; } }
+
+    @-webkit-keyframes notice {
+        0%    { -webkit-transform: scale(0.9); opacity: 0; }
+        50%   { -webkit-transform: scale(1);   opacity: 1; }
+        100%  { -webkit-transform: scale(1.1); opacity: 0; } }
+
+    *:not(input) { -webkit-animation-fill-mode: forwards; animation-fill-mode: forwards;
+        cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+
+    input { outline: none; }
+
+    html, body { position: absolute; top: 0; bottom: 0; right: 0; left: 0; padding: 0; margin: 0; }
+    body { box-sizing: border-box; overflow: hidden; background: black; color: white; font-family: DOS, sans-serif; }
+
+    .center { position: absolute; left: 0; top: 0; right: 0; bottom: 0; text-align: center; }
+    .center { display: -ms-flexbox; display: -moz-flex; display: -webkit-flex; display: flex;
+              -ms-flex-direction: column; -moz-flex-direction: column; -webkit-flex-direction: column; flex-direction: column;
+              -ms-align-items: center; -moz-align-items: center; -webkit-align-items: center; align-items: center;
+              -ms-flex-pack: center; -ms-align-content: center; -moz-align-content: center; -webkit-align-content: center; align-content: center;
+              -ms-justify-content: center; -moz-justify-content: center; -webkit-justify-content: center; justify-content: center; }
+
+    .appear { /*pointer-events: none;*/
+              -webkit-animation: appear 1s ease-out; animation: appear 1s ease-out;  }
+
+    .disappear { /*pointer-events: none;*/
+                 -webkit-animation: appear 1s ease-in; animation: appear 1s ease-in;
+                 -webkit-animation-direction: reverse; animation-direction: reverse; }
+
+    a { cursor: pointer; color: white; text-decoration: none; }
+    a * { pointer-events: none; }
+
+    a.btn       { position: absolute; margin: 25px; font-size: 25px; opacity: 0.25; }
+    .fullscreen { top: 0; right: 0; }
+    .info       { bottom: 0; right: 0; opacity: 0.15; }
+
+                     .btn       { transition: all 0.1s ease-in-out; -webkit-transform: scale(1); transform: scale(1); }
+                     .btn.pressed,
+    html:not(.touch) .btn:hover { opacity: 1 !important; -webkit-transform: scale(1.1); transform: scale(1.1); }
+                     .btn.wait  { pointer-events: none; }
+
+    .notice        { font-size: 60px; color: rgba(255,255,255,0.5); }
+    .notice.active { -webkit-animation: notice 5s linear; animation: notice 5s linear; }
+
+    ::-webkit-input-placeholder { color: white; opacity: 0.25; }
+    ::-moz-placeholder { color: white; opacity: 0.25; }
+    :-ms-input-placeholder { color: white; opacity: 0.25; }
+    input:-moz-placeholder { color: white; opacity: 0.25; }
+
+    #canvas { position: absolute; left: 50%; top: 50%; margin-left: -320px; margin-top: -200px; }
+
+    </style>
+
+    <!-- libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+
+    <!-- UselessJS, see http://github.com/xpl/useless -->
+    <script src="useless.micro.min.js"></script>
+    <script src="useless.devtools.min.js"></script>
+
+    <!-- main code -->
+    <script>
+(async function () {
+ try {
+  const r=await fetch('dosbox.mem.gz');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!('DecompressionStream' in window)) throw new Error('Нужен современный Chrome с DecompressionStream');
+  const stream=r.body.pipeThrough(new DecompressionStream('gzip'));
+  const buffer=await new Response(stream).arrayBuffer();
+  window.GOP_MEM_URL=URL.createObjectURL(new Blob([buffer]));
+  const script=document.createElement('script');script.src='main.js';document.head.appendChild(script);
+ } catch(e) { document.getElementById('status').textContent='Ошибка загрузки: '+e.message;console.error(e); }
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+body{overflow:hidden!important} #canvas{top:29%!important} #touchpad{position:fixed;bottom:0;left:0;right:0;height:49%;background:#15191e;z-index:1000;display:flex;flex-direction:column;gap:5px;padding:7px;box-sizing:border-box;touch-action:manipulation}#touchpad .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;flex:1}#touchpad button{background:#313c4c;color:white;border:1px solid #60748c;border-radius:8px;font:600 18px system-ui;min-height:38px;touch-action:manipulation}#touchpad button:active{background:#597aa5}#touchpad .hint{font:12px system-ui;color:#aab8cc;text-align:center}#touchpad .wide{font-size:13px}#touchpad .entry{display:flex;gap:5px;height:42px}#touchpad .entry input{flex:1;min-width:0;font:16px system-ui;border-radius:7px;padding:0 9px;background:#fff;color:#111}#touchpad .entry button{padding:0 12px;font-size:13px}#canvas{max-width:none!important}
+
+/* Mobile DOS screen: zoom without changing the emulator's internal 640x400 resolution. */
+#gameviewport{position:fixed;top:0;left:0;right:0;height:49dvh;overflow:auto;background:#000;z-index:2;overscroll-behavior:contain}
+#canvas{position:relative!important;display:block!important;left:auto!important;top:auto!important;margin:0!important;transform:none!important;max-width:none!important;max-height:none!important;width:96vw!important;height:auto!important;image-rendering:pixelated}
+#touchpad{height:51dvh!important}
+#touchpad .hint{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+#touchpad .zoom-controls{display:flex;gap:6px;align-items:center}
+#touchpad .zoom-controls button{font-size:14px;padding:3px 10px;min-height:28px}
+</style><style id="mobile-layout-v7">
+/* Fit the complete DOS screen to the phone width. Never crop horizontal text. */
+html,body{width:100%!important;height:100%!important;overflow:hidden!important}
+#gameviewport{position:fixed!important;inset:0 0 auto 0!important;height:calc(100dvh - var(--pad-height, 270px))!important;box-sizing:border-box!important;padding:8px 10px!important;overflow:auto!important;background:#000!important;touch-action:pan-y!important}
+#canvas{position:relative!important;left:auto!important;top:auto!important;margin:0!important;display:block!important;max-width:100%!important;height:auto!important;transform:none!important;image-rendering:pixelated!important}
+#touchpad{position:fixed!important;bottom:0!important;left:0!important;right:0!important;height:var(--pad-height,270px)!important;min-height:0!important;box-sizing:border-box!important;padding:5px 8px 9px!important;gap:4px!important;display:flex!important;flex-direction:column!important}
+#touchpad .hint{min-height:25px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;font-size:12px!important}
+#touchpad .zoom-controls button{min-height:26px!important;padding:2px 10px!important}
+#touchpad .entry{height:37px!important;flex-shrink:0!important}
+#touchpad .keys{flex:1!important;min-height:0!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:repeat(4,minmax(0,1fr))!important;gap:4px!important}
+#touchpad button{min-height:0!important;border-radius:7px!important;font-size:15px!important}
+#touchpad .entry button{font-size:13px!important}
+@media (max-height:650px){:root{--pad-height:230px}}
+</style></head>
+
+    <body>
+        <div id="gameviewport"><canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas></div>
+
+        <div id="status" class="notice center">Downloading...</div>
+
+        <a class="btn fullscreen" href="javascript:{}" onclick="document.getElementById('canvas').webkitRequestFullscreen()"><i class="fa fa-expand"></i></a>
+    <div id="touchpad"><div class="hint"><span>ГОПНИК</span><span class="zoom-controls"><button id="zoomout" type="button">−</button><span id="zoomvalue">140%</span><button id="zoomin" type="button">+</button></span></div>
+<div class="entry"><input id="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Имя или команда (например help)"><button id="send" type="button">ВВОД ↵</button></div>
+<div class="keys">
+<button data-k="49">1</button><button data-k="50">2</button><button data-k="51">3</button><button data-k="52">4</button><button data-k="53">5</button>
+<button data-k="54">6</button><button data-k="55">7</button><button data-k="56">8</button><button data-k="57">9</button><button data-k="48">0</button>
+<button data-k="38">↑</button><button data-k="37">←</button><button data-k="40">↓</button><button data-k="39">→</button><button data-k="13">ENTER</button>
+<button data-k="27">ESC</button><button data-k="32">ПРОБЕЛ</button><button data-k="8">⌫</button><button data-k="89">Y</button><button data-k="78">N</button>
+</div></div><script>
+(function(){
+var zoom=100;var canvas=document.getElementById('canvas');
+// Zoom is constrained to available width, avoiding horizontal clipping.
+function setZoom(v){
+ zoom=Math.max(65,Math.min(100,v));
+ canvas.style.setProperty('width', 'calc((100vw - 20px) * '+(zoom/100)+')','important');
+ document.getElementById('zoomvalue').textContent=zoom+'%';
+ document.getElementById('gameviewport').scrollLeft=0;
+}
+document.getElementById('zoomin').addEventListener('click',function(){setZoom(zoom+10)});
+document.getElementById('zoomout').addEventListener('click',function(){setZoom(zoom-10)});
+setZoom(100);
+// Always fit the full screen horizontally; no automatic zoom after starting.
+var codes={13:'Enter',27:'Escape',32:'Space',8:'Backspace',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown'};
+function emit(code,down){
+ var key=codes[code]||(code>=65&&code<=90?String.fromCharCode(code).toLowerCase():String.fromCharCode(code));
+ var physicalCode=code>=48&&code<=57?'Digit'+String.fromCharCode(code):code>=65&&code<=90?'Key'+String.fromCharCode(code):({13:'Enter',27:'Escape',32:'Space',8:'Backspace',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown'}[code]||key);
+ var target=document.getElementById('canvas');
+ // Older Emscripten/DOSBox builds may listen on window, document, or canvas.
+ [window,document,target].forEach(function(el){
+  var e=new KeyboardEvent(down?'keydown':'keyup',{key:key,code:physicalCode,bubbles:true,cancelable:true});
+  try{Object.defineProperty(e,'keyCode',{get:function(){return code}});Object.defineProperty(e,'which',{get:function(){return code}})}catch(ex){}
+  el.dispatchEvent(e);
+ });
+}
+var queue=Promise.resolve();
+function activateGameZoom(){}
+function stroke(code){activateGameZoom();queue=queue.then(function(){return new Promise(function(resolve){emit(code,true);setTimeout(function(){emit(code,false);setTimeout(resolve,35)},65)})})}
+function sendText(str){for(var c of str){var n=c.charCodeAt(0);if(n>=65&&n<=90)n+=32;if(n>=97&&n<=122||n>=48&&n<=57||n===32)stroke(n);else if(c==='-')stroke(189)}stroke(13)}
+document.querySelectorAll('#touchpad [data-k]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();document.getElementById('canvas').focus();stroke(Number(b.dataset.k))})});
+var inp=document.getElementById('command');document.getElementById('send').addEventListener('click',function(){sendText(inp.value);inp.value='';inp.blur()});
+inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();document.getElementById('send').click()}});
+})();
+</script>
+<!-- Mobile text-mode feasibility diagnostic: non-invasive; leaves gameplay and key handling untouched. -->
+<style>
+#textprobe{position:fixed;right:8px;top:8px;z-index:1100;background:#263c54;color:#fff;border:1px solid #8294a8;border-radius:7px;padding:6px 9px;font:12px system-ui}
+#probeoutput{display:none;position:fixed;inset:8% 4% 35%;z-index:1200;overflow:auto;background:#101820;color:#eaf1f8;padding:14px;border:1px solid #7289a4;border-radius:10px;font:13px/1.5 monospace;white-space:pre-wrap}
+#probeoutput button{font:14px system-ui;padding:7px;margin:5px}
+</style>
+<button id="textprobe" type="button">Тест текста</button>
+<div id="probeoutput"><button id="closeprobe" type="button">Закрыть</button><button id="copyprobe" type="button">Копировать отчёт</button><pre id="probetext"></pre></div>
+<script>
+(function(){
+var report='';
+function inspect(){
+ var c=document.getElementById('canvas'),m=window.Module||{},out=[];
+ out.push('Gopnik text-mode feasibility probe 1');
+ out.push('Canvas: '+c.width+'x'+c.height);
+ out.push('Canvas context: '+(function(){try{return c.getContext('2d')?'2d':'not 2d'}catch(e){return e.message}})());
+ out.push('Module present: '+!!window.Module);
+ out.push('HEAPU8 present: '+!!m.HEAPU8);
+ out.push('HEAPU8 bytes: '+(m.HEAPU8&&m.HEAPU8.length||0));
+ out.push('HEAP16 present: '+!!m.HEAP16);
+ out.push('Runtime initialized: '+!!m.calledRun);
+ out.push('Canvas visible text is pixels, not browser DOM.');
+ out.push('Note: HEAPU8 alone does not prove accessible DOS VGA text memory.');
+ try{var ctx=c.getContext('2d');if(ctx){var a=ctx.getImageData(0,0,Math.min(64,c.width),Math.min(64,c.height)).data,n=0;for(var i=0;i<a.length;i+=4){if(a[i]+a[i+1]+a[i+2]>30)n++}out.push('Nonblack pixels in top-left 64x64: '+n)}}catch(e){out.push('Pixel read failed: '+e.message)}
+ out.push('User agent: '+navigator.userAgent);
+ report=out.join('\n');document.getElementById('probetext').textContent=report;document.getElementById('probeoutput').style.display='block';
+}
+document.getElementById('textprobe').addEventListener('click',inspect);
+document.getElementById('closeprobe').addEventListener('click',function(){document.getElementById('probeoutput').style.display='none'});
+document.getElementById('copyprobe').addEventListener('click',function(){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).catch(function(){})}else{var ta=document.createElement('textarea');ta.value=report;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}});
+})();
+</script>
+</body>
+</html>
