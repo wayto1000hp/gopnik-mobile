@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
 
     <!-- MS-DOS icon -->
-    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://js-dos.com/assets/ico/apple-touch-icon-144-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://js-dos.com/assets/ico/apple-touch-icon-114-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://js-dos.com/assets/ico/apple-touch-icon-72-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" href="http://js-dos.com/assets/ico/apple-touch-icon-57-precomposed.png">
-    <link rel="shortcut icon" href="http://js-dos.com/assets/ico/favicon.png">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://js-dos.com/assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://js-dos.com/assets/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://js-dos.com/assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="https://js-dos.com/assets/ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="https://js-dos.com/assets/ico/favicon.png">
 
     <style>
 
@@ -115,21 +115,50 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
-body{overflow:hidden!important} #canvas{top:34%!important} #touchpad{position:fixed;bottom:0;left:0;right:0;height:43%;background:#15191e;z-index:1000;display:flex;flex-direction:column;gap:5px;padding:7px;box-sizing:border-box;touch-action:manipulation}#touchpad .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;flex:1}#touchpad button{background:#313c4c;color:white;border:1px solid #60748c;border-radius:8px;font:600 18px system-ui;min-height:38px;touch-action:manipulation}#touchpad button:active{background:#597aa5}#touchpad .hint{font:12px system-ui;color:#aab8cc;text-align:center}#touchpad .wide{font-size:13px}#canvas{max-width:none!important}
+body{overflow:hidden!important} #canvas{top:29%!important} #touchpad{position:fixed;bottom:0;left:0;right:0;height:49%;background:#15191e;z-index:1000;display:flex;flex-direction:column;gap:5px;padding:7px;box-sizing:border-box;touch-action:manipulation}#touchpad .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;flex:1}#touchpad button{background:#313c4c;color:white;border:1px solid #60748c;border-radius:8px;font:600 18px system-ui;min-height:38px;touch-action:manipulation}#touchpad button:active{background:#597aa5}#touchpad .hint{font:12px system-ui;color:#aab8cc;text-align:center}#touchpad .wide{font-size:13px}#touchpad .entry{display:flex;gap:5px;height:42px}#touchpad .entry input{flex:1;min-width:0;font:16px system-ui;border-radius:7px;padding:0 9px;background:#fff;color:#111}#touchpad .entry button{padding:0 12px;font-size:13px}#canvas{max-width:none!important}
+
+/* Mobile DOS screen: zoom without changing the emulator's internal 640x400 resolution. */
+#gameviewport{position:fixed;top:0;left:0;right:0;height:49dvh;overflow:auto;background:#000;z-index:2;overscroll-behavior:contain}
+#canvas{position:relative!important;display:block!important;left:auto!important;top:auto!important;margin:0!important;transform:none!important;max-width:none!important;max-height:none!important;width:140vw!important;height:auto!important;image-rendering:pixelated}
+#touchpad{height:51dvh!important}
+#touchpad .hint{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+#touchpad .zoom-controls{display:flex;gap:6px;align-items:center}
+#touchpad .zoom-controls button{font-size:14px;padding:3px 10px;min-height:28px}
 </style></head>
 
     <body>
-        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        <div id="gameviewport"><canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas></div>
 
         <div id="status" class="notice center">Downloading...</div>
 
         <a class="btn fullscreen" href="javascript:{}" onclick="document.getElementById('canvas').webkitRequestFullscreen()"><i class="fa fa-expand"></i></a>
-    <div id="touchpad"><div class="hint">ГОПНИК • экранная клавиатура • дождись загрузки</div><div class="keys">
+    <div id="touchpad"><div class="hint"><span>ГОПНИК • увеличенный текст</span><span class="zoom-controls"><button id="zoomout" type="button">−</button><span id="zoomvalue">140%</span><button id="zoomin" type="button">+</button></span></div>
+<div class="entry"><input id="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Имя или команда (например help)"><button id="send" type="button">ВВОД ↵</button></div>
+<div class="keys">
 <button data-k="49">1</button><button data-k="50">2</button><button data-k="51">3</button><button data-k="52">4</button><button data-k="53">5</button>
 <button data-k="54">6</button><button data-k="55">7</button><button data-k="56">8</button><button data-k="57">9</button><button data-k="48">0</button>
-<button data-k="38">↑</button><button data-k="37">←</button><button data-k="40">↓</button><button data-k="39">→</button><button data-k="13" class="wide">ENTER</button>
-<button data-k="27" class="wide">ESC</button><button data-k="32" class="wide">ПРОБЕЛ</button><button data-k="8" class="wide">СТЕРЕТЬ</button><button data-k="89">Y</button><button data-k="78">N</button>
+<button data-k="38">↑</button><button data-k="37">←</button><button data-k="40">↓</button><button data-k="39">→</button><button data-k="13">ENTER</button>
+<button data-k="27">ESC</button><button data-k="32">ПРОБЕЛ</button><button data-k="8">⌫</button><button data-k="89">Y</button><button data-k="78">N</button>
 </div></div><script>
-(function(){function press(k){var canvas=document.getElementById('canvas');canvas.focus();var code=Number(k);var key=code===13?'Enter':code===27?'Escape':code===32?' ':code===8?'Backspace':code>=37&&code<=40?['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'][code-37]:String.fromCharCode(code);['keydown','keyup'].forEach(function(t){var e=new KeyboardEvent(t,{key:key,code:code>=48&&code<=57?'Digit'+key:key,keyCode:code,which:code,bubbles:true,cancelable:true});[window,document,canvas].forEach(function(el){el.dispatchEvent(e)})})}document.querySelectorAll('#touchpad button').forEach(function(b){b.addEventListener('pointerdown',function(e){e.preventDefault();press(b.dataset.k)})})})();
+(function(){
+var zoom=140;var canvas=document.getElementById('canvas');
+function setZoom(v){zoom=Math.max(100,Math.min(220,v));canvas.style.setProperty('width',zoom+'vw','important');document.getElementById('zoomvalue').textContent=zoom+'%';}
+document.getElementById('zoomin').addEventListener('click',function(){setZoom(zoom+20)});
+document.getElementById('zoomout').addEventListener('click',function(){setZoom(zoom-20)});
+setZoom(140);
+var codes={13:'Enter',27:'Escape',32:'Space',8:'Backspace',37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown'};
+function emit(code,down){
+ var key=codes[code]||String.fromCharCode(code).toLowerCase();
+ var e=new KeyboardEvent(down?'keydown':'keyup',{key:key,code:code>=48&&code<=57?'Digit'+String.fromCharCode(code):key,bubbles:true,cancelable:true});
+ try{Object.defineProperty(e,'keyCode',{get:function(){return code}});Object.defineProperty(e,'which',{get:function(){return code}})}catch(ex){}
+ window.dispatchEvent(e);
+}
+var queue=Promise.resolve();
+function stroke(code){queue=queue.then(function(){return new Promise(function(resolve){emit(code,true);setTimeout(function(){emit(code,false);setTimeout(resolve,35)},65)})})}
+function sendText(str){for(var c of str){var n=c.charCodeAt(0);if(n>=65&&n<=90)n+=32;if(n>=97&&n<=122||n>=48&&n<=57||n===32)stroke(n);else if(c==='-')stroke(189)}stroke(13)}
+document.querySelectorAll('#touchpad [data-k]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();stroke(Number(b.dataset.k))})});
+var inp=document.getElementById('command');document.getElementById('send').addEventListener('click',function(){sendText(inp.value);inp.value='';inp.blur()});
+inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();document.getElementById('send').click()}});
+})();
 </script></body>
 </html>
