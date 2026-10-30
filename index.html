@@ -146,7 +146,7 @@ html,body{width:100%!important;height:100%!important;overflow:hidden!important}
 
         <a class="btn fullscreen" href="javascript:{}" onclick="document.getElementById('canvas').webkitRequestFullscreen()"><i class="fa fa-expand"></i></a>
     <div id="touchpad"><div class="hint"><span>ГОПНИК</span><span class="zoom-controls"><button id="zoomout" type="button">−</button><span id="zoomvalue">140%</span><button id="zoomin" type="button">+</button></span></div>
-<div class="entry"><input id="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Имя или команда (например help)"><button id="send" type="button">ВВОД ↵</button></div>
+<div class="entry"><input id="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Имя или команда латиницей (help)"><button id="send" type="button">ВВОД ↵</button></div>
 <div class="keys">
 <button data-k="49">1</button><button data-k="50">2</button><button data-k="51">3</button><button data-k="52">4</button><button data-k="53">5</button>
 <button data-k="54">6</button><button data-k="55">7</button><button data-k="56">8</button><button data-k="57">9</button><button data-k="48">0</button>
@@ -181,10 +181,62 @@ function emit(code,down){
 var queue=Promise.resolve();
 function activateGameZoom(){}
 function stroke(code){activateGameZoom();queue=queue.then(function(){return new Promise(function(resolve){emit(code,true);setTimeout(function(){emit(code,false);setTimeout(resolve,35)},65)})})}
-function sendText(str){for(var c of str){var n=c.charCodeAt(0);if(n>=65&&n<=90)n+=32;if(n>=97&&n<=122||n>=48&&n<=57||n===32)stroke(n);else if(c==='-')stroke(189)}stroke(13)}
+function sendText(str){
+ // The original DOS game accepts keyboard scan codes, not pasted text.
+ // Queue each keypress and wait until the final Enter has been delivered.
+ var normalized=str.normalize('NFKC');
+ var count=0;
+ for(var c of normalized){
+  var n=c.charCodeAt(0);
+  if(n>=97&&n<=122)n-=32;
+  if((n>=65&&n<=90)||(n>=48&&n<=57)||n===32){stroke(n);count++}
+  else if(c==='-'){stroke(189);count++}
+ }
+ stroke(13);
+ return {count:count,done:queue};
+}
 document.querySelectorAll('#touchpad [data-k]').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();document.getElementById('canvas').focus();stroke(Number(b.dataset.k))})});
-var inp=document.getElementById('command');document.getElementById('send').addEventListener('click',function(){sendText(inp.value);inp.value='';inp.blur()});
+var inp=document.getElementById('command');document.getElementById('send').addEventListener('click',function(){
+ var value=inp.value;
+ if(!value.trim()) {stroke(13);inp.blur();return;}
+ var result=sendText(value);
+ var btn=this;btn.disabled=true;btn.textContent='ВВОД…';
+ result.done.then(function(){btn.disabled=false;btn.textContent='ВВОД ↵';inp.value='';inp.blur()});
+});
 inp.addEventListener('keydown',function(e){e.stopPropagation();if(e.key==='Enter'){e.preventDefault();document.getElementById('send').click()}});
 })();
-</script></body>
+</script>
+<!-- Mobile text-mode feasibility diagnostic: non-invasive; leaves gameplay and key handling untouched. -->
+<style>
+#textprobe{position:fixed;right:8px;top:8px;z-index:1100;background:#263c54;color:#fff;border:1px solid #8294a8;border-radius:7px;padding:6px 9px;font:12px system-ui}
+#probeoutput{display:none;position:fixed;inset:8% 4% 35%;z-index:1200;overflow:auto;background:#101820;color:#eaf1f8;padding:14px;border:1px solid #7289a4;border-radius:10px;font:13px/1.5 monospace;white-space:pre-wrap}
+#probeoutput button{font:14px system-ui;padding:7px;margin:5px}
+</style>
+<button id="textprobe" type="button">Тест текста</button>
+<div id="probeoutput"><button id="closeprobe" type="button">Закрыть</button><button id="copyprobe" type="button">Копировать отчёт</button><pre id="probetext"></pre></div>
+<script>
+(function(){
+var report='';
+function inspect(){
+ var c=document.getElementById('canvas'),m=window.Module||{},out=[];
+ out.push('Gopnik text-mode feasibility probe 1');
+ out.push('Canvas: '+c.width+'x'+c.height);
+ out.push('Canvas context: '+(function(){try{return c.getContext('2d')?'2d':'not 2d'}catch(e){return e.message}})());
+ out.push('Module present: '+!!window.Module);
+ out.push('HEAPU8 present: '+!!m.HEAPU8);
+ out.push('HEAPU8 bytes: '+(m.HEAPU8&&m.HEAPU8.length||0));
+ out.push('HEAP16 present: '+!!m.HEAP16);
+ out.push('Runtime initialized: '+!!m.calledRun);
+ out.push('Canvas visible text is pixels, not browser DOM.');
+ out.push('Note: HEAPU8 alone does not prove accessible DOS VGA text memory.');
+ try{var ctx=c.getContext('2d');if(ctx){var a=ctx.getImageData(0,0,Math.min(64,c.width),Math.min(64,c.height)).data,n=0;for(var i=0;i<a.length;i+=4){if(a[i]+a[i+1]+a[i+2]>30)n++}out.push('Nonblack pixels in top-left 64x64: '+n)}}catch(e){out.push('Pixel read failed: '+e.message)}
+ out.push('User agent: '+navigator.userAgent);
+ report=out.join('\n');document.getElementById('probetext').textContent=report;document.getElementById('probeoutput').style.display='block';
+}
+document.getElementById('textprobe').addEventListener('click',inspect);
+document.getElementById('closeprobe').addEventListener('click',function(){document.getElementById('probeoutput').style.display='none'});
+document.getElementById('copyprobe').addEventListener('click',function(){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).catch(function(){})}else{var ta=document.createElement('textarea');ta.value=report;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}});
+})();
+</script>
+</body>
 </html>
