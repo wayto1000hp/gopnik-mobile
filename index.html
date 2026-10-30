@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ru-ru">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ГОПНИК.EXE</title>
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
+
+    <!-- MS-DOS icon -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://js-dos.com/assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://js-dos.com/assets/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://js-dos.com/assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="http://js-dos.com/assets/ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="http://js-dos.com/assets/ico/favicon.png">
+
+    <style>
+
+    @font-face {
+        font-family: 'DOS';
+        src: url('dos_system_font.eot');
+        src: url('dos_system_font.eot?#iefix') format('embedded-opentype'),
+        url('dos_system_font.woff2') format('woff2'),
+        url('dos_system_font.woff') format('woff'),
+        url('dos_system_font.ttf') format('truetype'),
+        url('dos_system_font.svg#dos_system_fontregular') format('svg');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    @keyframes appear {
+        0%    { transform: scale(0.9); opacity: 0; }
+        100%  { transform: scale(1); opacity: 1; } }
+
+    @-webkit-keyframes appear {
+        0%    { -webkit-transform: scale(0.9); opacity: 0; }
+        100%  { -webkit-transform: scale(1); opacity: 1; } }
+
+    @keyframes notice {
+        0%    { transform: scale(0.9); opacity: 0; }
+        50%   { transform: scale(1);   opacity: 1; }
+        100%  { transform: scale(1.1); opacity: 0; } }
+
+    @-webkit-keyframes notice {
+        0%    { -webkit-transform: scale(0.9); opacity: 0; }
+        50%   { -webkit-transform: scale(1);   opacity: 1; }
+        100%  { -webkit-transform: scale(1.1); opacity: 0; } }
+
+    *:not(input) { -webkit-animation-fill-mode: forwards; animation-fill-mode: forwards;
+        cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none; }
+
+    input { outline: none; }
+
+    html, body { position: absolute; top: 0; bottom: 0; right: 0; left: 0; padding: 0; margin: 0; }
+    body { box-sizing: border-box; overflow: hidden; background: black; color: white; font-family: DOS, sans-serif; }
+
+    .center { position: absolute; left: 0; top: 0; right: 0; bottom: 0; text-align: center; }
+    .center { display: -ms-flexbox; display: -moz-flex; display: -webkit-flex; display: flex;
+              -ms-flex-direction: column; -moz-flex-direction: column; -webkit-flex-direction: column; flex-direction: column;
+              -ms-align-items: center; -moz-align-items: center; -webkit-align-items: center; align-items: center;
+              -ms-flex-pack: center; -ms-align-content: center; -moz-align-content: center; -webkit-align-content: center; align-content: center;
+              -ms-justify-content: center; -moz-justify-content: center; -webkit-justify-content: center; justify-content: center; }
+
+    .appear { /*pointer-events: none;*/
+              -webkit-animation: appear 1s ease-out; animation: appear 1s ease-out;  }
+
+    .disappear { /*pointer-events: none;*/
+                 -webkit-animation: appear 1s ease-in; animation: appear 1s ease-in;
+                 -webkit-animation-direction: reverse; animation-direction: reverse; }
+
+    a { cursor: pointer; color: white; text-decoration: none; }
+    a * { pointer-events: none; }
+
+    a.btn       { position: absolute; margin: 25px; font-size: 25px; opacity: 0.25; }
+    .fullscreen { top: 0; right: 0; }
+    .info       { bottom: 0; right: 0; opacity: 0.15; }
+
+                     .btn       { transition: all 0.1s ease-in-out; -webkit-transform: scale(1); transform: scale(1); }
+                     .btn.pressed,
+    html:not(.touch) .btn:hover { opacity: 1 !important; -webkit-transform: scale(1.1); transform: scale(1.1); }
+                     .btn.wait  { pointer-events: none; }
+
+    .notice        { font-size: 60px; color: rgba(255,255,255,0.5); }
+    .notice.active { -webkit-animation: notice 5s linear; animation: notice 5s linear; }
+
+    ::-webkit-input-placeholder { color: white; opacity: 0.25; }
+    ::-moz-placeholder { color: white; opacity: 0.25; }
+    :-ms-input-placeholder { color: white; opacity: 0.25; }
+    input:-moz-placeholder { color: white; opacity: 0.25; }
+
+    #canvas { position: absolute; left: 50%; top: 50%; margin-left: -320px; margin-top: -200px; }
+
+    </style>
+
+    <!-- libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+
+    <!-- UselessJS, see http://github.com/xpl/useless -->
+    <script src="useless.micro.min.js"></script>
+    <script src="useless.devtools.min.js"></script>
+
+    <!-- main code -->
+    <script>
+(async function () {
+ try {
+  const r=await fetch('dosbox.mem.gz');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  if(!('DecompressionStream' in window)) throw new Error('Нужен современный Chrome с DecompressionStream');
+  const stream=r.body.pipeThrough(new DecompressionStream('gzip'));
+  const buffer=await new Response(stream).arrayBuffer();
+  window.GOP_MEM_URL=URL.createObjectURL(new Blob([buffer]));
+  const script=document.createElement('script');script.src='main.js';document.head.appendChild(script);
+ } catch(e) { document.getElementById('status').textContent='Ошибка загрузки: '+e.message;console.error(e); }
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+body{overflow:hidden!important} #canvas{top:34%!important} #touchpad{position:fixed;bottom:0;left:0;right:0;height:43%;background:#15191e;z-index:1000;display:flex;flex-direction:column;gap:5px;padding:7px;box-sizing:border-box;touch-action:manipulation}#touchpad .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;flex:1}#touchpad button{background:#313c4c;color:white;border:1px solid #60748c;border-radius:8px;font:600 18px system-ui;min-height:38px;touch-action:manipulation}#touchpad button:active{background:#597aa5}#touchpad .hint{font:12px system-ui;color:#aab8cc;text-align:center}#touchpad .wide{font-size:13px}#canvas{max-width:none!important}
+</style></head>
+
+    <body>
+        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+        <div id="status" class="notice center">Downloading...</div>
+
+        <a class="btn fullscreen" href="javascript:{}" onclick="document.getElementById('canvas').webkitRequestFullscreen()"><i class="fa fa-expand"></i></a>
+    <div id="touchpad"><div class="hint">ГОПНИК • экранная клавиатура • дождись загрузки</div><div class="keys">
+<button data-k="49">1</button><button data-k="50">2</button><button data-k="51">3</button><button data-k="52">4</button><button data-k="53">5</button>
+<button data-k="54">6</button><button data-k="55">7</button><button data-k="56">8</button><button data-k="57">9</button><button data-k="48">0</button>
+<button data-k="38">↑</button><button data-k="37">←</button><button data-k="40">↓</button><button data-k="39">→</button><button data-k="13" class="wide">ENTER</button>
+<button data-k="27" class="wide">ESC</button><button data-k="32" class="wide">ПРОБЕЛ</button><button data-k="8" class="wide">СТЕРЕТЬ</button><button data-k="89">Y</button><button data-k="78">N</button>
+</div></div><script>
+(function(){function press(k){var canvas=document.getElementById('canvas');canvas.focus();var code=Number(k);var key=code===13?'Enter':code===27?'Escape':code===32?' ':code===8?'Backspace':code>=37&&code<=40?['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'][code-37]:String.fromCharCode(code);['keydown','keyup'].forEach(function(t){var e=new KeyboardEvent(t,{key:key,code:code>=48&&code<=57?'Digit'+key:key,keyCode:code,which:code,bubbles:true,cancelable:true});[window,document,canvas].forEach(function(el){el.dispatchEvent(e)})})}document.querySelectorAll('#touchpad button').forEach(function(b){b.addEventListener('pointerdown',function(e){e.preventDefault();press(b.dataset.k)})})})();
+</script></body>
+</html>
